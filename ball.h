@@ -106,12 +106,72 @@ class Ball
         {
             force.x = -(drag.x - position.x + size) / 30;
             force.y = -(drag.y - position.y + size) / 30;
+            float a = drag.x - position.x;
+            float b = drag.y - position.y;
+            float c = sqrt(a * a + b * b);
+            a /= c;
+            b /= c;
+            force.x = -a * 5 * c / 100;
+            force.y = -b * 5 * c / 100;
             std::cout << force.x << ' ' << force.y << std::endl;
         }
-        
+
+        bool intersectsLine(sf::Vector2f start, sf::Vector2f end)
+        {
+            float x1 = start.x, y1 = start.y, x2 = end.x, y2 = end.y;
+            float cx = position.x + size, cy = position.y + size;
+            float r = size;
+            bool inside1 = contains(sf::Vector2f(x1,y1));
+            bool inside2 = contains(sf::Vector2f(x2,y2));
+            if (inside1 || inside2) return true;
+
+            float distX = x1 - x2;
+            float distY = y1 - y2;
+            float len = sqrt( (distX*distX) + (distY*distY) );
+
+            float dot = ( ((cx-x1)*(x2-x1)) + ((cy-y1)*(y2-y1)) ) / pow(len,2);
+
+            float closestX = x1 + (dot * (x2-x1));
+            float closestY = y1 + (dot * (y2-y1));
+
+            bool onSegment = linePoint(x1,y1,x2,y2, closestX,closestY);
+            if (!onSegment) return false;
+            distX = closestX - cx;
+            distY = closestY - cy;
+            float distance = sqrt( (distX*distX) + (distY*distY) );
+
+            if (distance <= r) {
+                return true;
+            }
+            return false;
+        }
+
         bool contains(sf::Vector2f pos)
         {
             return distance(pos) <= size;
+        }
+
+        bool linePoint(float x1, float y1, float x2, float y2, float px, float py)
+        {
+            float d1 = distance(sf::Vector2f(x1,y1));
+            float d2 = distance(sf::Vector2f(x2,y2));
+
+            float lineLen = dist(sf::Vector2f(x1,y1), sf::Vector2f(x2,y2));
+
+            float buffer = 0.1;    // higher # = less accurate
+
+            if (d1+d2 >= lineLen-buffer && d1+d2 <= lineLen+buffer) {
+                return true;
+            }
+            return false;
+        }
+
+        float dist(sf::Vector2f pos1, sf::Vector2f pos2)
+        {
+            float a = pos1.x - pos2.x;
+            float b = pos1.y - pos2.y;
+            
+            return sqrt(a * a + b * b);
         }
 
         float distance(sf::Vector2f pos)
@@ -123,6 +183,12 @@ class Ball
             return sqrt(a + b);
         }
 
+        void reverseVelocity()
+        {
+            velocity.x *= -1;
+            velocity.y *= -1;
+        }
+
         void mousePressed()
         {
             mouseDown = true;
@@ -131,5 +197,10 @@ class Ball
         void mouseReleased()
         {
             mouseDown = false;
+        }
+
+        sf::Vector2f getVelocity()
+        {
+            return velocity;
         }
 };
